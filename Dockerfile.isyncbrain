@@ -307,7 +307,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y /opt/selkies-js
     apt-get clean && rm -rf /var/lib/apt/lists/* /var/cache/debconf/* /var/log/* /tmp/* /var/tmp/*
 
 # Install Selkies Python application with secure clipboard from local source
-# First install build dependencies for PyAV (av package)
+# First install build dependencies for PyAV (av package) and xkbcommon
 RUN apt-get update && apt-get install --no-install-recommends -y \
         pkg-config \
         libavcodec-dev \
@@ -317,14 +317,17 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
         libswscale-dev \
         libswresample-dev \
         libavfilter-dev \
-        ffmpeg && \
+        ffmpeg \
+        libxkbcommon-dev \
+        cython3 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /var/cache/debconf/* /var/log/* /tmp/* /var/tmp/*
 
 ARG PYPI_PACKAGE=selkies
 ARG PACKAGE_VERSION=0.0.0.dev0
 ARG PIP_BREAK_SYSTEM_PACKAGES=1
 COPY --chown=1000:1000 --from=selkies-build /opt/pypi/dist/*.whl /opt/
-RUN pip3 install --no-cache-dir --force-reinstall --ignore-installed /opt/*.whl && rm -f /opt/*.whl
+# Use --prefer-binary to avoid building av from source (needs ffmpeg 7)
+RUN pip3 install --no-cache-dir --prefer-binary --force-reinstall --ignore-installed /opt/*.whl && rm -f /opt/*.whl
 
 # Copy scripts and configurations used to start the container
 COPY --chown=1000:1000 addons/example/entrypoint.sh /etc/entrypoint.sh
