@@ -226,7 +226,14 @@ class WebRTCDemoSignaling {
 
         if (event.data === "HELLO") {
             this._setStatus("Registered with server.");
-            this._setStatus("Waiting for stream.");
+            // Request session with peer 0 (selkies backend)
+            this._ws_conn.send('SESSION 0');
+            this._setStatus("Requesting session with server...");
+            return;
+        }
+
+        if (event.data === "SESSION_OK") {
+            this._setStatus("Session established, waiting for stream.");
             return;
         }
 
