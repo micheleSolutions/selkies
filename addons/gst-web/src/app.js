@@ -116,6 +116,7 @@ var app = new Vue({
             status: 'connecting',
             loadingText: '',
             clipboardStatus: 'disabled',
+            clipboardSecurity: null,
             windowResolution: "",
             encoderName: "",
             gamepad: {
@@ -187,6 +188,11 @@ var app = new Vue({
     },
 
     methods: {
+        formatBytes: (bytes) => {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        },
         getIntParam: (key, default_value) => {
             const prefixedKey = app.appName + "_" + key;
             return (parseInt(window.localStorage.getItem(prefixedKey)) || default_value);
@@ -436,6 +442,13 @@ webrtc.ongpustats = async (data) => {
     // Update DOM only when menu is visible
     if (app.showDrawer) {
         app.gpuStat = {gpuLoad: Math.round(data.load * 100), gpuMemoryTotal: data.memory_total, gpuMemoryUsed: data.memory_used}
+    }
+}
+
+webrtc.onserversettings = (data) => {
+    console.log("Received server settings:", data);
+    if (data.clipboard_security) {
+        app.clipboardSecurity = data.clipboard_security;
     }
 }
 

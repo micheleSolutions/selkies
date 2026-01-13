@@ -286,6 +286,15 @@
                 <li>Bitrate: <b>{{ connectionStat.connectionVideoBitrate }} mbps</b></li>
                 <li>Available receive bandwidth: <b>{{ connectionStat.connectionAvailableBandwidth }}</b></li>
               </ul>
+              <div v-if="clipboardSecurity" style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f5f5f5;">
+                <b style="color: #333;">🛡️ Clipboard Security</b>
+                <ul style="margin-top: 5px;">
+                  <li>Paste IN (browser→workspace): <b style="color: green;">Always allowed</b></li>
+                  <li>Copy OUT (workspace→browser): <b :style="{ color: clipboardSecurity.out_enabled ? 'orange' : 'red' }">{{ clipboardSecurity.out_enabled ? 'Limited' : 'Blocked' }}</b></li>
+                  <li v-if="clipboardSecurity.out_enabled">Max per operation: <b>{{ formatBytes(clipboardSecurity.out_max_bytes) }}</b></li>
+                  <li v-if="clipboardSecurity.out_enabled">Rate limit: <b>{{ formatBytes(clipboardSecurity.rate_limit_bytes) }}/{{ clipboardSecurity.rate_limit_window_seconds }}s</b></li>
+                </ul>
+              </div>
               <small style="color:gray">
               Shortcuts
               <ul>

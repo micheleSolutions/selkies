@@ -429,6 +429,11 @@ class WebRTCDemo {
             if (this.onlatencymeasurement !== null) {
                 this.onlatencymeasurement(msg.data.latency_ms);
             }
+        } else if (msg.type === 'server_settings') {
+            this._setDebug("received server settings: " + JSON.stringify(msg.data));
+            if (this.onserversettings !== null) {
+                this.onserversettings(msg.data);
+            }
         } else {
             this._setError("Unhandled message received: " + msg.type);
         }

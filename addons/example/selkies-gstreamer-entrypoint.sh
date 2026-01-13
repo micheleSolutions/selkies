@@ -195,6 +195,7 @@ EOF
 selkies \
     --addr="localhost" \
     --port="${SELKIES_PORT:-8081}" \
+    --mode=webrtc \
     --enable_basic_auth="false" \
     --enable_metrics_http="true" \
     --metrics_http_port="${SELKIES_METRICS_HTTP_PORT:-9081}" \
