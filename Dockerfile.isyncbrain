@@ -426,6 +426,6 @@ WORKDIR /home/ubuntu
 # Volume for clipboard logs (optional - mount to persist logs)
 VOLUME ["/var/log/clipboard"]
 
-EXPOSE 8080
+EXPOSE 3000
 
 ENTRYPOINT ["/usr/bin/supervisord"]
