@@ -56,6 +56,11 @@ except ImportError:
 import msgpack
 import distro
 
+from .clipboard_security import (
+    get_clipboard_security_manager,
+    ClipboardSecurityManager
+)
+
 logger_webrtc_input = logging.getLogger("webrtc_input")
 logger_selkies_gamepad = logging.getLogger("selkies_gamepad")
 
@@ -821,6 +826,7 @@ class WebRTCInput:
         self.client_gamepad_associations = {} 
 
         self.clipboard_running = False
+        self.clipboard_security_manager = get_clipboard_security_manager()
         self.uinput_mouse_socket_path = uinput_mouse_socket_path
         self.uinput_mouse_socket = None
         self.enable_clipboard = enable_clipboard
@@ -1692,8 +1698,12 @@ class WebRTCInput:
     async def start_clipboard(self):
         if self.enable_clipboard not in ["true", "out"]:
             logger_webrtc_input.info("Skipping outbound clipboard service."); return
-        
+
+        # Start the clipboard security manager for async logging
+        await self.clipboard_security_manager.start()
+
         logger_webrtc_input.info(f"Clipboard monitor running (binary mode: {self.enable_binary_clipboard in ['true', 'out']})")
+        logger_webrtc_input.info(f"Clipboard security status: {self.clipboard_security_manager.get_status()}")
         self.clipboard_running = True
         last_data_bytes = b""
         while self.clipboard_running:
@@ -1706,8 +1716,20 @@ class WebRTCInput:
                     curr_data_bytes = curr_data.encode('utf-8') if isinstance(curr_data, str) else curr_data
                 if curr_data_bytes is not None and curr_data_bytes != last_data_bytes:
                     log_data = curr_data if isinstance(curr_data, str) else f"<{len(curr_data)} bytes>"
-                    logger_webrtc_input.info(f"Clipboard changed. Sending content ({curr_mime})")
-                    await self.on_clipboard_read(curr_data, curr_mime)
+
+                    # Check clipboard security before sending
+                    allowed, block_reason = await self.clipboard_security_manager.check_clipboard_out(
+                        curr_data, curr_mime
+                    )
+
+                    if allowed:
+                        logger_webrtc_input.info(f"Clipboard changed. Sending content ({curr_mime})")
+                        await self.on_clipboard_read(curr_data, curr_mime)
+                    else:
+                        logger_webrtc_input.warning(
+                            f"Clipboard OUT blocked by security policy: {block_reason}"
+                        )
+
                     last_data_bytes = curr_data_bytes
                 await asyncio.sleep(0.5)
             except asyncio.CancelledError:
@@ -1716,7 +1738,9 @@ class WebRTCInput:
             except Exception as e:
                 logger_webrtc_input.error(f"Error in clipboard monitor loop: {e}", exc_info=True)
                 await asyncio.sleep(2)
-        
+
+        # Stop the clipboard security manager
+        await self.clipboard_security_manager.stop()
         self.clipboard_running = False
         logger_webrtc_input.info("Clipboard monitor stopped")
 
@@ -1962,11 +1986,20 @@ class WebRTCInput:
                     asyncio.create_task(_write_multipart())
                 self.multipart_clipboard_buffer = None
                 self.multipart_clipboard_in_progress = False
-        elif msg_type == "cr": 
+        elif msg_type == "cr":
             if self.enable_clipboard in ["true", "out"]:
                 data, mime_type = await self.read_clipboard(use_binary=self.enable_binary_clipboard in ["true", "out"])
                 if data:
-                    await self.on_clipboard_read(data, mime_type)
+                    # Check clipboard security before sending
+                    allowed, block_reason = await self.clipboard_security_manager.check_clipboard_out(
+                        data, mime_type
+                    )
+                    if allowed:
+                        await self.on_clipboard_read(data, mime_type)
+                    else:
+                        logger_webrtc_input.warning(
+                            f"Clipboard OUT request blocked by security policy: {block_reason}"
+                        )
                 else: logger_webrtc_input.debug("No clipboard content to send on request")
             else: logger_webrtc_input.warning("Rejecting clipboard read: outbound clipboard disabled.")
         elif msg_type == "cb":
