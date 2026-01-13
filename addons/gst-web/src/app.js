@@ -398,14 +398,17 @@ signaling.onstatus = (message) => {
 signaling.onerror = (message) => { app.logEntries.push(applyTimestamp("[signaling] [ERROR] " + message)) };
 
 signaling.ondisconnect = () => {
-    var checkconnect = app.status == checkconnect;
-    // if (app.status !== "connected") return;
     console.log("signaling disconnected");
+    // Don't reset WebRTC if already connected - the stream can continue without signaling
+    if (videoConnected === "connected") {
+        console.log("WebRTC still connected, keeping stream alive");
+        return;
+    }
     app.status = 'connecting';
     videoElement.style.cursor = "auto";
     webrtc.reset();
     app.status = 'checkconnect';
-    if (!checkconnect) audio_signaling.disconnect();
+    audio_signaling.disconnect();
 }
 
 audio_signaling.onstatus = (message) => {
@@ -415,14 +418,17 @@ audio_signaling.onstatus = (message) => {
 audio_signaling.onerror = (message) => { app.logEntries.push(applyTimestamp("[audio signaling] [ERROR] " + message)) };
 
 audio_signaling.ondisconnect = () => {
-    var checkconnect = app.status == checkconnect;
-    // if (app.status !== "connected") return;
     console.log("audio signaling disconnected");
+    // Don't reset if audio already connected via video stream
+    if (audioConnected === "connected") {
+        console.log("Audio still connected via video stream, ignoring");
+        return;
+    }
     app.status = 'connecting';
     videoElement.style.cursor = "auto";
     audio_webrtc.reset();
     app.status = 'checkconnect';
-    if (!checkconnect) signaling.disconnect();
+    signaling.disconnect();
 }
 
 // Send webrtc status and error messages to logs.

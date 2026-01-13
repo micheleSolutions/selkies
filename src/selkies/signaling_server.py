@@ -289,13 +289,10 @@ class WebRTCSimpleServer(object):
             if other_id in self.sessions:
                 del self.sessions[other_id]
                 logger.info("Also cleaned up {} session".format(other_id))
-                # If there was a session with this peer, also
-                # close the connection to reset its state.
+                # Mark the other peer as no longer in session, but don't close connection
+                # This allows WebRTC connection to remain active even if signaling peer disconnects
                 if other_id in self.peers:
-                    logger.info("Closing connection to {}".format(other_id))
-                    wso, oaddr, _= self.peers[other_id]
-                    del self.peers[other_id]
-                    await wso.close()
+                    self.peers[other_id][2] = None  # Reset session status
 
     async def cleanup_room(self, uid, room_id):
         room_peers = self.rooms[room_id]
