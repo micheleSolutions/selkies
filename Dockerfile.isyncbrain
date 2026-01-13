@@ -298,8 +298,13 @@ Pin-Priority: -1" > /etc/apt/preferences.d/firefox-nosnap && \
 # Install GStreamer distribution
 COPY --chown=1000:1000 --from=selkies /opt/gstreamer ./gstreamer
 
-# Install web application
+# Install web application from local source with iMediSync Bastion branding
+# First copy base files from pre-built image, then overlay with our modifications
 COPY --chown=1000:1000 --from=selkies-web /usr/share/nginx/html ./gst-web
+# Overlay with modified files (branding and removed features)
+COPY --chown=1000:1000 addons/gst-web/src/index.html ./gst-web/
+COPY --chown=1000:1000 addons/gst-web/src/manifest.json ./gst-web/
+COPY --chown=1000:1000 addons/gst-web/src/app.js ./gst-web/
 
 # Install Joystick Interposer
 COPY --chown=1000:1000 --from=selkies-js-interposer /opt/*.deb /opt/selkies-js-interposer.deb
@@ -367,11 +372,11 @@ RUN mkdir -p /var/log/clipboard && chown 1000:1000 /var/log/clipboard
 # Configure bashrc to show welcome message
 RUN echo "[ ! -z \"\$TERM\" -a -r /etc/motd ] && echo \"\$(grep '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\\\"')\" && cat /etc/motd" >> /etc/bash.bashrc && \
     echo "==============================================\n\
-= iSyncBrain Research Lab Desktop =\n\
-= Selkies with Secure Clipboard Control =\n\
+= iMediSync Bastion =\n\
+= iSyncBrain Research Lab =\n\
 ==============================================\n\
 \n\
-Clipboard Security is ENABLED.\n\
+Secure Workspace with Clipboard Control.\n\
 Use CLIPBOARD_OUT_* environment variables to configure.\n\
 " > /etc/motd
 

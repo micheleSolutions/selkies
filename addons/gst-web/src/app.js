@@ -326,7 +326,7 @@ var app = new Vue({
             }, 700);
         },
         appName(newValue) {
-            document.title = "Selkies - " + newValue;
+            document.title = "iMediSync Bastion - " + newValue;
         },
         showDrawer(newValue) {
             // Detach inputs when menu is shown.
@@ -339,7 +339,7 @@ var app = new Vue({
     },
 
     updated: () => {
-        document.title = "Selkies - " + app.appName;
+        document.title = "iMediSync Bastion - " + app.appName;
     },
 
 });

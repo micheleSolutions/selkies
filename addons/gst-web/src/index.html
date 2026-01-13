@@ -132,7 +132,7 @@
         display: none;
     }
   </style>
-  <title>Selkies - webrtc</title>
+  <title>iMediSync Bastion</title>
 </head>
 
 <body>
@@ -249,20 +249,6 @@
                     <span>Return to launcher</span>
                   </v-tooltip>
 
-                  <v-tooltip bottom v-if="gamepad.gamepadState === 'connected'">
-                    <template v-slot:activator="{ on }">
-                      <v-icon color="black" v-on="on">videogame_asset</v-icon>
-                    </template>
-                    <span>Gamepad connected: {{ gamepad.gamepadName }}</span>
-                  </v-tooltip>
-
-                  <v-tooltip bottom v-else>
-                    <template v-slot:activator="{ on }">
-                      <v-icon color="grey" v-on="on">videogame_asset</v-icon>
-                    </template>
-                    <span>Gamepad disconnected</span>
-                  </v-tooltip>
-
                   <v-tooltip bottom>
                     <template v-slot:activator="{ on }">
                       <v-icon class="ml-2" color="black" v-on="on">account_circle</v-icon>
@@ -278,12 +264,6 @@
               <p>
                 <v-select :items="videoFramerateOptions" label="Video framerate" menu-props="left"
                   v-model="videoFramerate" hint="Framerate selection for host video encoder" persistent-hint>
-                </v-select>
-              </p>
-              <p>
-                <v-select :items="audioBitRateOptions" label="Audio bitrate" menu-props="left" v-model="audioBitRate"
-                  hint="Streaming bitrate selection for host audio encoder"
-                  persistent-hint>
                 </v-select>
               </p>
               <p>
@@ -306,19 +286,11 @@
                 <li>Bitrate: <b>{{ connectionStat.connectionVideoBitrate }} mbps</b></li>
                 <li>Available receive bandwidth: <b>{{ connectionStat.connectionAvailableBandwidth }}</b></li>
               </ul>
-              Audio Stats
-              <ul>
-                <li>Latency: <b>{{ connectionStat.connectionAudioLatency }} ms</b></li>
-                <li>Codec: <b>{{ connectionStat.connectionAudioCodecName }}</b></li>
-                <li>Bitrate: <b>{{ connectionStat.connectionAudioBitrate }} kbps</b></li>
-              </ul>
               <small style="color:gray">
               Shortcuts
               <ul>
                 <li>Fullscreen: Ctrl + Shift + F or Fullscreen Button</li>
-                <li>Remote (Game) Cursor Lock: Ctrl + Shift + LeftClick</li>
                 <li>Open Side Menu: Ctrl + Shift + M or Side Button</li>
-                <li><a style="color:inherit;text-decoration:none" target="_blank" rel="noopener noreferrer" href="https://github.com/selkies-project/selkies/blob/main/docs/README.md#citations-in-academic-publications"><b>Please cite within your publication for academic usage</b></a></li>
               </ul>
               </small>
               </p>
@@ -430,7 +402,6 @@ navigator.serviceWorker.addEventListener('message', event => {
 <script src="lib/vuetify-1.5.24.min.js?ts=1"></script>
 <script src="lib/vue-spinner-v1.0.4.min.js?ts=1"></script>
 <script src="lib/guacamole-keyboard-selkies.js?ts=1"></script>
-<script src="gamepad.js?ts=1"></script>
 <script src="input.js?ts=1"></script>
 <script src="util.js?ts=1"></script>
 <script src="signaling.js?ts=1"></script>

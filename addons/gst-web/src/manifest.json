@@ -1,6 +1,6 @@
 {
-    "name": "Selkies WebRTC",
-    "short_name": "selkies",
+    "name": "iMediSync Bastion",
+    "short_name": "bastion",
     "lang": "en-US",
     "start_url": "./index.html",
     "display": "minimal-ui",
