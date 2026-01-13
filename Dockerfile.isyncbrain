@@ -310,9 +310,7 @@ COPY --chown=1000:1000 --from=selkies /opt/gstreamer ./gstreamer
 # First copy base files from pre-built image, then overlay with our modifications
 COPY --chown=1000:1000 --from=selkies-web /usr/share/nginx/html ./gst-web
 # Overlay with modified files (branding and removed features) - legacy UI
-COPY --chown=1000:1000 addons/gst-web/src/index.html ./gst-web/
-COPY --chown=1000:1000 addons/gst-web/src/manifest.json ./gst-web/
-COPY --chown=1000:1000 addons/gst-web/src/app.js ./gst-web/
+COPY --chown=1000:1000 addons/gst-web/src/ ./gst-web/
 # Copy built modern dashboard with iMediSync Bastion branding
 COPY --chown=1000:1000 --from=dashboard-build /app/dist ./gst-web/dashboard/
 
