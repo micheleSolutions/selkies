@@ -2,13 +2,28 @@ import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Shield, ShieldOff, ArrowUpFromLine, ArrowDownToLine } from "lucide-react";
+
+interface ClipboardSecuritySettings {
+	out_enabled: boolean;
+	out_max_bytes: number;
+	rate_limit_bytes: number;
+	rate_limit_window_seconds: number;
+}
+
+function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function Clipboard() {
 	const [dashboardClipboardContent, setDashboardClipboardContent] = useState('');
 	const [clipboardImageUrl, setClipboardImageUrl] = useState<string | null>(null);
+	const [securitySettings, setSecuritySettings] = useState<ClipboardSecuritySettings | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// --- Message Listener for Clipboard Updates ---
+	// --- Message Listener for Clipboard Updates and Server Settings ---
 	useEffect(() => {
 		const handleWindowMessage = (event: MessageEvent) => {
 			if (event.origin !== window.location.origin) return;
@@ -19,6 +34,10 @@ export function Clipboard() {
 					if (typeof message.text === 'string') {
 						setDashboardClipboardContent(message.text);
 					}
+				}
+				// Listen for server settings with clipboard security config
+				if (message.type === 'serverSettings' && message.payload?.clipboard_security) {
+					setSecuritySettings(message.payload.clipboard_security);
 				}
 			}
 		};
@@ -70,7 +89,37 @@ export function Clipboard() {
 	};
 
 	return (
-		<div className="w-[300px] p-4 flex flex-col gap-2">
+		<div className="w-[300px] p-4 flex flex-col gap-3">
+			{/* Security Settings Display */}
+			{securitySettings && (
+				<div className="rounded-lg border bg-muted/50 p-3 space-y-2">
+					<div className="flex items-center gap-2 text-sm font-medium">
+						{securitySettings.out_enabled ? (
+							<Shield className="h-4 w-4 text-green-500" />
+						) : (
+							<ShieldOff className="h-4 w-4 text-red-500" />
+						)}
+						<span>Clipboard Security</span>
+					</div>
+					<div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+						<div className="flex items-center gap-1">
+							<ArrowDownToLine className="h-3 w-3" />
+							<span>Paste IN: Always</span>
+						</div>
+						<div className="flex items-center gap-1">
+							<ArrowUpFromLine className="h-3 w-3" />
+							<span>Copy OUT: {securitySettings.out_enabled ? 'Limited' : 'Blocked'}</span>
+						</div>
+					</div>
+					{securitySettings.out_enabled && (
+						<div className="text-xs text-muted-foreground border-t pt-2 mt-2 space-y-1">
+							<div>Max: {formatBytes(securitySettings.out_max_bytes)}/operation</div>
+							<div>Rate: {formatBytes(securitySettings.rate_limit_bytes)}/{securitySettings.rate_limit_window_seconds}s</div>
+						</div>
+					)}
+				</div>
+			)}
+
 			<Label htmlFor="dashboardClipboardTextarea">Clipboard</Label>
 			<Textarea
 				id="dashboardClipboardTextarea"

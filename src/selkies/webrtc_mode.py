@@ -43,6 +43,7 @@ from .input_handler import WebRTCInput
 from .display_utils import resize_display, set_dpi, set_cursor_size
 from .webrtc_utils import SystemMonitor, Metrics, GPUMonitor, get_rtc_configuration
 from .settings import settings_webrtc as settings, AppSettings, FINAL_SETTING_DEFINITIONS_WEBRTC as SETTING_DEFINITIONS
+from .clipboard_security import get_clipboard_security_manager
 from types import SimpleNamespace
 
 CURSOR_SIZE = 32
@@ -68,6 +69,16 @@ def get_server_settings() -> dict:
             if 'meta' in setting_def and 'allowed' in setting_def['meta']:
                 payload_entry['allowed'] = setting_def['meta']['allowed']
         server_settings_payload["settings"][name] = payload_entry
+
+    # Add clipboard security settings
+    clipboard_manager = get_clipboard_security_manager()
+    server_settings_payload["clipboard_security"] = {
+        "out_enabled": clipboard_manager.config.out_enabled,
+        "out_max_bytes": clipboard_manager.config.out_max_bytes,
+        "rate_limit_bytes": clipboard_manager.config.rate_limit_bytes,
+        "rate_limit_window_seconds": clipboard_manager.config.rate_limit_window_seconds,
+    }
+
     return server_settings_payload
 
 class WebRTCApp:
