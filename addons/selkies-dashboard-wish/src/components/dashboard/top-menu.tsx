@@ -92,7 +92,7 @@ export function TopMenu({
 
   // --- Server Settings & UI Customization ---
   const [serverSettings, setServerSettings] = React.useState<any>(null);
-  const [uiTitle, setUiTitle] = React.useState('Selkies');
+  const [uiTitle, setUiTitle] = React.useState('iMediSync Bastion');
   const [uiShowLogo, setUiShowLogo] = React.useState(true);
 
   // --- Mobile/Touch Detection ---
@@ -582,48 +582,6 @@ export function TopMenu({
                   </span>
                 </MenubarItem>
 
-                <MenubarItem
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onAudioToggle();
-                  }}
-                >
-                  <Volume2 className="h-4 w-4 mr-2" />
-                  <span className="flex-1">Audio Stream</span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {isAudioActive ? 'On' : 'Off'}
-                  </span>
-                </MenubarItem>
-
-                <MenubarItem
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onMicrophoneToggle();
-                  }}
-                >
-                  <Mic className="h-4 w-4 mr-2" />
-                  <span className="flex-1">Microphone</span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {isMicrophoneActive ? 'On' : 'Off'}
-                  </span>
-                </MenubarItem>
-
-                <MenubarItem
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onGamepadToggle();
-                  }}
-                >
-                  <Gamepad2 className="h-4 w-4 mr-2" />
-                  <span className="flex-1">Gamepad Input</span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {isGamepadEnabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </MenubarItem>
-
                 <MenubarSeparator />
                 <MenubarLabel>Tools & Panels</MenubarLabel>
 
@@ -674,14 +632,6 @@ export function TopMenu({
                   <>
                     <MenubarLabel>Touch Controls</MenubarLabel>
 
-                    <MenubarItem onClick={handleToggleTouchGamepad}>
-                      <Gamepad2 className="h-4 w-4 mr-2" />
-                      <span className="flex-1">Touch Gamepad</span>
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {isTouchGamepadActive ? 'On' : 'Off'}
-                      </span>
-                    </MenubarItem>
-
                     <MenubarItem onClick={handleToggleTrackpadMode}>
                       <Touchpad className="h-4 w-4 mr-2" />
                       <span className="flex-1">Trackpad Mode</span>
@@ -711,17 +661,9 @@ export function TopMenu({
                 )}
 
                 <div className="flex items-center justify-between w-full px-2 py-1">
-                  <a
-                    href="https://github.com/selkies-project/selkies"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 hover:text-primary transition-colors"
-                  >
-                    {uiShowLogo && <SelkiesLogo width={20} height={20} />}
-                    <span className="text-sm font-medium">
-                      {uiTitle}
-                    </span>
-                  </a>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {uiTitle}
+                  </span>
                   <ModeToggle />
                 </div>
               </MenubarContent>

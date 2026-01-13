@@ -62,6 +62,14 @@ RUN sed -i \
     pyproject.toml && \
     python3 -m build
 
+# Build modern dashboard with iMediSync Bastion branding
+FROM node:20-alpine AS dashboard-build
+WORKDIR /app
+COPY addons/selkies-dashboard-wish/package.json ./
+RUN npm install
+COPY addons/selkies-dashboard-wish/ ./
+RUN npm run build
+
 FROM ${GSTREAMER_BASE_IMAGE}:${GSTREAMER_BASE_IMAGE_RELEASE}-${DISTRIB_IMAGE}${DISTRIB_RELEASE} AS selkies
 FROM ${WEB_IMAGE} AS selkies-web
 FROM ${JS_BASE_IMAGE}:${JS_BASE_IMAGE_RELEASE}-${DISTRIB_IMAGE}${DISTRIB_RELEASE} AS selkies-js-interposer
@@ -301,10 +309,12 @@ COPY --chown=1000:1000 --from=selkies /opt/gstreamer ./gstreamer
 # Install web application from local source with iMediSync Bastion branding
 # First copy base files from pre-built image, then overlay with our modifications
 COPY --chown=1000:1000 --from=selkies-web /usr/share/nginx/html ./gst-web
-# Overlay with modified files (branding and removed features)
+# Overlay with modified files (branding and removed features) - legacy UI
 COPY --chown=1000:1000 addons/gst-web/src/index.html ./gst-web/
 COPY --chown=1000:1000 addons/gst-web/src/manifest.json ./gst-web/
 COPY --chown=1000:1000 addons/gst-web/src/app.js ./gst-web/
+# Copy built modern dashboard with iMediSync Bastion branding
+COPY --chown=1000:1000 --from=dashboard-build /app/dist ./gst-web/dashboard/
 
 # Install Joystick Interposer
 COPY --chown=1000:1000 --from=selkies-js-interposer /opt/*.deb /opt/selkies-js-interposer.deb
