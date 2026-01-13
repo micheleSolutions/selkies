@@ -107,6 +107,62 @@ class WebRTCDemoSignaling {
          * @type {number}
          */
         this.retry_count = 0;
+
+        /**
+         * @type {number}
+         * @private
+         */
+        this._session_retry_count = 0;
+
+        /**
+         * @type {number}
+         * @private
+         */
+        this._session_max_retries = 5;
+
+        /**
+         * @type {boolean}
+         * @private
+         */
+        this._session_established = false;
+    }
+
+    /**
+     * Sleep helper function for async delays
+     * @private
+     * @param {number} ms - milliseconds to sleep
+     * @returns {Promise}
+     */
+    _sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Request session with peer 0 (selkies backend) with retry logic
+     * @private
+     */
+    async _requestSession() {
+        if (this._session_established) {
+            return;
+        }
+
+        if (this._session_retry_count >= this._session_max_retries) {
+            this._setError("Failed to establish session after " + this._session_max_retries + " attempts");
+            return;
+        }
+
+        this._session_retry_count++;
+        const delay = 500 * this._session_retry_count; // 500ms, 1s, 1.5s, 2s, 2.5s
+
+        if (this._session_retry_count > 1) {
+            this._setStatus("Retrying session request (" + this._session_retry_count + "/" + this._session_max_retries + ") in " + delay + "ms...");
+            await this._sleep(delay);
+        }
+
+        if (this._ws_conn && this._ws_conn.readyState === WebSocket.OPEN) {
+            this._setStatus("Requesting session with server (attempt " + this._session_retry_count + ")...");
+            this._ws_conn.send('SESSION 0');
+        }
     }
 
     /**
@@ -186,6 +242,9 @@ class WebRTCDemoSignaling {
         this._ws_conn.send(`HELLO ${this.peer_id} ${btoa(JSON.stringify(meta))}`);
         this._setStatus("Registering with server, peer ID: " + this.peer_id);
         this.retry_count = 0;
+        // Reset session state for new connection
+        this._session_retry_count = 0;
+        this._session_established = false;
     }
 
     /**
@@ -226,20 +285,25 @@ class WebRTCDemoSignaling {
 
         if (event.data === "HELLO") {
             this._setStatus("Registered with server.");
-            // Request session with peer 0 (selkies backend)
-            this._ws_conn.send('SESSION 0');
-            this._setStatus("Requesting session with server...");
+            // Request session with peer 0 (selkies backend) using retry logic
+            this._requestSession();
             return;
         }
 
         if (event.data === "SESSION_OK") {
+            this._session_established = true;
             this._setStatus("Session established, waiting for stream.");
             return;
         }
 
         if (event.data.startsWith("ERROR")) {
+            // Check if this is a "peer not found" error - retry session request
+            if (event.data.includes("not found") && !this._session_established) {
+                this._setDebug("Peer not found, will retry session request...");
+                this._requestSession();
+                return;
+            }
             this._setStatus("Error from server: " + event.data);
-            // TODO: reset the connection.
             return;
         }
 
