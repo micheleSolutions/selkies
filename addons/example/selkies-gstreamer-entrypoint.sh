@@ -185,4 +185,10 @@ selkies \
     --enable_basic_auth="false" \
     --enable_metrics_http="true" \
     --metrics_http_port="${SELKIES_METRICS_HTTP_PORT:-9081}" \
+    --turn_host="${SELKIES_TURN_HOST}" \
+    --turn_port="${SELKIES_TURN_PORT}" \
+    --turn_shared_secret="${TURN_RANDOM_PASSWORD}" \
+    --turn_protocol="${SELKIES_TURN_PROTOCOL:-udp}" \
+    --stun_host="${SELKIES_STUN_HOST:-stun.l.google.com}" \
+    --stun_port="${SELKIES_STUN_PORT:-19302}" \
     $@
