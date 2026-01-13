@@ -1158,6 +1158,9 @@ class MediaPipeline:
         """Starts the Media pipeline asynchronously"""
         logger.info("Starting media pipeline")
 
+        # Ensure GStreamer is initialized (may have been cleaned up by stop_pipeline)
+        _ensure_gst_imported()
+
         try:
             self.pipeline = _Gst.Pipeline.new()
             if not self.pipeline:
