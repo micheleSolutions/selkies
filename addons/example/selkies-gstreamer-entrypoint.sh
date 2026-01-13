@@ -106,15 +106,9 @@ server {
     }
 
     location /turn {
-        proxy_http_version      1.1;
-        proxy_read_timeout      3600s;
-        proxy_send_timeout      3600s;
-        proxy_connect_timeout   3600s;
-        proxy_buffering         off;
-
-        client_max_body_size    10M;
-
-        proxy_pass http$(if [ \"$(echo ${SELKIES_ENABLE_HTTPS} | tr '[:upper:]' '[:lower:]')\" = \"true\" ]; then echo -n "s"; fi)://localhost:${SELKIES_PORT:-8081};
+        alias /opt/gst-web/turn;
+        default_type application/json;
+        add_header Cache-Control \"no-cache, no-store, must-revalidate\";
     }
 
     location /ws {
