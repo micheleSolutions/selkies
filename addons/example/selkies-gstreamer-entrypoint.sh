@@ -178,6 +178,25 @@ server {
 # Clear the cache registry
 rm -rf "${HOME}/.cache/gstreamer-1.0"
 
+# Create RTC config JSON for the web client
+cat > /opt/gst-web/turn << EOF
+{
+  "lifetimeDuration": "86400s",
+  "blockStatus": "NOT_BLOCKED",
+  "iceTransportPolicy": "all",
+  "iceServers": [
+    {
+      "urls": ["stun:${SELKIES_STUN_HOST:-stun.l.google.com}:${SELKIES_STUN_PORT:-19302}"]
+    },
+    {
+      "urls": ["turn:${SELKIES_TURN_HOST}:${SELKIES_TURN_PORT}?transport=${SELKIES_TURN_PROTOCOL:-udp}"],
+      "username": "${SELKIES_TURN_USERNAME}",
+      "credential": "${SELKIES_TURN_PASSWORD:-${TURN_RANDOM_PASSWORD}}"
+    }
+  ]
+}
+EOF
+
 # Start the Selkies WebRTC HTML5 remote desktop application
 selkies \
     --addr="localhost" \
