@@ -297,9 +297,9 @@ class WebRTCDemoSignaling {
         }
 
         if (event.data.startsWith("ERROR")) {
-            // Check if this is a "peer not found" error - retry session request
-            if (event.data.includes("not found") && !this._session_established) {
-                this._setDebug("Peer not found, will retry session request...");
+            // Check if this is a retriable error - retry session request
+            if ((event.data.includes("not found") || event.data.includes("not available")) && !this._session_established) {
+                this._setDebug("Peer not ready, will retry session request...");
                 this._requestSession();
                 return;
             }

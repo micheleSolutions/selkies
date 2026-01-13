@@ -379,12 +379,19 @@ class WebRTCSimpleServer(object):
                 if callee_status == 'session':
                     await ws.send('ERROR peer {!r} busy'.format(callee_id))
                     continue
-                await ws.send('SESSION_OK')
+                # Get callee websocket before sending SESSION_OK
                 wsc = self.peers[callee_id][0]
                 logger.info('Session from {!r} ({!r}) to {!r} ({!r})'
                       ''.format(uid, raddr, callee_id, wsc.remote_address))
-                # Notify callee
-                await wsc.send('SESSION {}'.format(uid))
+                # Notify callee FIRST - if this fails, don't send SESSION_OK
+                try:
+                    await wsc.send('SESSION {}'.format(uid))
+                except Exception as e:
+                    logger.error(f"Failed to notify callee {callee_id}: {e}")
+                    await ws.send('ERROR peer {!r} not available'.format(callee_id))
+                    continue
+                # Only send SESSION_OK after callee is successfully notified
+                await ws.send('SESSION_OK')
                 # Register session
                 self.peers[uid][2] = peer_status = 'session'
                 self.sessions[uid] = callee_id
