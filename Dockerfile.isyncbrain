@@ -115,6 +115,8 @@ ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
 
 USER 1000
+# Verify fakeroot is available before setting it as SHELL (helps with Docker cache issues)
+RUN test -x /usr/bin/fakeroot && /usr/bin/fakeroot --version
 # Use BUILDAH_FORMAT=docker in buildah
 SHELL ["/usr/bin/fakeroot", "--", "/bin/sh", "-c"]
 
