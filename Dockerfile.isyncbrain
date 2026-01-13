@@ -332,8 +332,8 @@ RUN pip3 install --no-cache-dir --prefer-binary --force-reinstall --ignore-insta
 # Copy scripts and configurations used to start the container
 COPY --chown=1000:1000 addons/example/entrypoint.sh /etc/entrypoint.sh
 RUN chmod -f 755 /etc/entrypoint.sh
-COPY --chown=1000:1000 addons/example/selkies-gstreamer-entrypoint.sh /etc/selkies-gstreamer-entrypoint.sh
-RUN chmod -f 755 /etc/selkies-gstreamer-entrypoint.sh
+COPY --chown=1000:1000 addons/example/selkies-gstreamer-entrypoint.sh /etc/selkies-entrypoint.sh
+RUN chmod -f 755 /etc/selkies-entrypoint.sh
 COPY --chown=1000:1000 addons/example/supervisord.conf /etc/supervisord.conf
 RUN chmod -f 755 /etc/supervisord.conf
 
