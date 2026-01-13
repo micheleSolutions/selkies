@@ -404,6 +404,8 @@ USER 1000
 ENV SHELL=/bin/bash
 ENV USER=ubuntu
 ENV HOME=/home/ubuntu
+# Add pip user scripts to PATH
+ENV PATH="/home/ubuntu/.local/bin:${PATH}"
 WORKDIR /home/ubuntu
 
 # Volume for clipboard logs (optional - mount to persist logs)
