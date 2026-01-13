@@ -377,6 +377,11 @@ class WebRTCSimpleServer(object):
                 if peer_status is not None:
                     await ws.send('ERROR peer {!r} busy'.format(callee_id))
                     continue
+                # Check if callee is already in a session
+                callee_status = self.peers[callee_id][2]
+                if callee_status == 'session':
+                    await ws.send('ERROR peer {!r} busy'.format(callee_id))
+                    continue
                 await ws.send('SESSION_OK')
                 wsc = self.peers[callee_id][0]
                 logger.info('Session from {!r} ({!r}) to {!r} ({!r})'

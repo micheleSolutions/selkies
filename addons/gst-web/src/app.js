@@ -561,6 +561,11 @@ webrtc.onconnectionstatechange = (state) => {
                     receiver.jitterBufferTarget = receiver.jitterBufferDelayHint = receiver.playoutDelayHint = 0;
                 }
             }, 15);
+            // If this receiver has an audio track, mark audio as connected
+            // (backend sends video+audio through one WebRTC connection)
+            if (receiver.track && receiver.track.kind === "audio") {
+                audioConnected = "connected";
+            }
         });
     }
     if (videoConnected === "connected" && audioConnected === "connected") {
