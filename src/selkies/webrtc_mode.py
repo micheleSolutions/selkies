@@ -243,11 +243,13 @@ class WebRTCApp:
         options.rtc_config = rtc_config
         options.turn_shared_secret = self.args.turn_shared_secret
         options.turn_host = self.args.turn_host
+        options.turn_host_external = getattr(self.args, 'turn_host_external', '') or self.args.turn_host
         options.turn_port = self.args.turn_port
         options.turn_protocol = self.args.turn_protocol
         options.turn_tls = self.args.turn_tls
         options.turn_auth_header_name = self.args.turn_rest_username_auth_header
         options.stun_host = self.args.stun_host
+        options.stun_host_external = getattr(self.args, 'stun_host_external', '') or self.args.stun_host
         options.stun_port = self.args.stun_port
         options.mode = self.args.mode
 
