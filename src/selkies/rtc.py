@@ -26,6 +26,7 @@ import re
 import json
 import sys
 import base64
+import urllib.parse
 
 from .webrtc import (
     MediaStreamTrack,
@@ -383,6 +384,9 @@ class RTCApp:
                     if ':' in credentials:
                         scheme, username, password = credentials.split(':', 2)
                         username = username.strip("/")
+                        # URL-decode credentials (they come URL-encoded from parse_rtc_config)
+                        username = urllib.parse.unquote(username)
+                        password = urllib.parse.unquote(password)
                     else:
                         scheme, username, password = 'turn:', '', ''
                     host = scheme + ':' + host
