@@ -51,6 +51,13 @@ var app = new Vue({
     data() {
         return {
             appName: window.location.pathname.endsWith("/") && (window.location.pathname.split("/")[1]) || "webrtc",
+            performanceMode: 'balanced',
+            performanceModeOptions: [
+                { text: '🔋 CPU Saver (15fps, 2mbps)', value: 'cpu_saver' },
+                { text: '⚖️ Balanced (30fps, 4mbps)', value: 'balanced' },
+                { text: '🚀 Performance (60fps, 8mbps)', value: 'performance' },
+                { text: '⚙️ Custom', value: 'custom' },
+            ],
             videoBitRate: 8000,
             videoBitRateOptions: [
                 { text: '250 kbps', value: 250 },
@@ -275,16 +282,43 @@ var app = new Vue({
     },
 
     watch: {
+        performanceMode(newValue) {
+            if (newValue === null || newValue === 'custom') return;
+            console.log("performance mode changed to " + newValue);
+            const modes = {
+                'cpu_saver': { fps: 15, bitrate: 2000 },
+                'balanced': { fps: 30, bitrate: 4000 },
+                'performance': { fps: 60, bitrate: 8000 }
+            };
+            if (modes[newValue]) {
+                this.videoFramerate = modes[newValue].fps;
+                this.videoBitRate = modes[newValue].bitrate;
+            }
+        },
         videoBitRate(newValue) {
             if (newValue === null) return;
             webrtc.sendDataChannelMessage('vb,' + newValue);
             this.setIntParam("videoBitRate", newValue);
+            // Switch to custom mode if user manually changes bitrate
+            if (this.performanceMode !== 'custom') {
+                const modes = { 'cpu_saver': 2000, 'balanced': 4000, 'performance': 8000 };
+                if (modes[this.performanceMode] !== newValue) {
+                    this.performanceMode = 'custom';
+                }
+            }
         },
         videoFramerate(newValue) {
             if (newValue === null) return;
             console.log("video framerate changed to " + newValue);
             webrtc.sendDataChannelMessage('_arg_fps,' + newValue);
             this.setIntParam("videoFramerate", newValue);
+            // Switch to custom mode if user manually changes framerate
+            if (this.performanceMode !== 'custom') {
+                const modes = { 'cpu_saver': 15, 'balanced': 30, 'performance': 60 };
+                if (modes[this.performanceMode] !== newValue) {
+                    this.performanceMode = 'custom';
+                }
+            }
         },
         resizeRemote(newValue, oldValue) {
             if (newValue === null) return;
