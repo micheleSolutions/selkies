@@ -22,10 +22,11 @@ logger = logging.getLogger("clipboard_security")
 
 @dataclass
 class ClipboardLogEntry:
-    """Represents a clipboard OUT event for audit logging."""
+    """Represents a clipboard event for audit logging."""
     timestamp: str
     size_bytes: int
     sha256_hash: str
+    direction: str = "out"  # "in" (browser→workspace) or "out" (workspace→browser)
     user_id: Optional[str] = None
     session_id: Optional[str] = None
     blocked: bool = False
@@ -35,6 +36,7 @@ class ClipboardLogEntry:
     def to_dict(self) -> dict:
         return {
             "timestamp": self.timestamp,
+            "direction": self.direction,
             "size_bytes": self.size_bytes,
             "sha256_hash": self.sha256_hash,
             "user_id": self.user_id,
@@ -271,6 +273,40 @@ class ClipboardSecurityManager:
             f"usage={current_usage}/{self.config.rate_limit_bytes}"
         )
         return True, None
+
+    async def log_clipboard_in(self, data: Any, mime_type: str = "text/plain"):
+        """
+        Log a clipboard IN operation (browser → workspace).
+
+        Clipboard IN is always allowed (no security restrictions on incoming data),
+        but we log it for audit purposes.
+
+        Args:
+            data: Clipboard content (str or bytes)
+            mime_type: MIME type of the content
+        """
+        # Convert data to bytes for consistent size calculation
+        if isinstance(data, str):
+            data_bytes = data.encode("utf-8")
+        else:
+            data_bytes = bytes(data) if data else b""
+
+        size_bytes = len(data_bytes)
+        sha256_hash = self._compute_hash(data_bytes)
+        timestamp = datetime.utcnow().isoformat() + "Z"
+
+        await self._log_event(ClipboardLogEntry(
+            timestamp=timestamp,
+            direction="in",
+            size_bytes=size_bytes,
+            sha256_hash=sha256_hash,
+            user_id=self.config.user_id,
+            session_id=self.config.session_id,
+            blocked=False,
+            block_reason=None,
+            mime_type=mime_type
+        ))
+        logger.info(f"Clipboard IN logged: size={size_bytes}, mime={mime_type}")
 
     async def _log_event(self, entry: ClipboardLogEntry):
         """Queue a log entry for async writing."""
