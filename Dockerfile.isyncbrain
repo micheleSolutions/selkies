@@ -121,7 +121,8 @@ RUN test -x /usr/bin/fakeroot && /usr/bin/fakeroot --version
 SHELL ["/usr/bin/fakeroot", "--", "/bin/sh", "-c"]
 
 # Install Selkies system dependencies
-RUN apt-get update && apt-get install --no-install-recommends -y \
+RUN for i in 1 2 3 4 5; do apt-get update && break || sleep 5; done && \
+    apt-get install --no-install-recommends -y \
         # System dependencies
         build-essential \
         curl \
@@ -318,12 +319,14 @@ COPY --chown=1000:1000 --from=dashboard-build /app/dist ./gst-web/dashboard/
 
 # Install Joystick Interposer
 COPY --chown=1000:1000 --from=selkies-js-interposer /opt/*.deb /opt/selkies-js-interposer.deb
-RUN apt-get update && apt-get install --no-install-recommends -y /opt/selkies-js-interposer.deb && rm -f /opt/selkies-js-interposer.deb && \
+RUN for i in 1 2 3 4 5; do apt-get update && break || sleep 5; done && \
+    apt-get install --no-install-recommends -y /opt/selkies-js-interposer.deb && rm -f /opt/selkies-js-interposer.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /var/cache/debconf/* /var/log/* /tmp/* /var/tmp/*
 
 # Install Selkies Python application with secure clipboard from local source
 # First install build dependencies for PyAV (av package) and xkbcommon
-RUN apt-get update && apt-get install --no-install-recommends -y \
+RUN for i in 1 2 3 4 5; do apt-get update && break || sleep 5; done && \
+    apt-get install --no-install-recommends -y \
         pkg-config \
         libavcodec-dev \
         libavformat-dev \
