@@ -151,6 +151,8 @@ class WebRTCApp:
 
         # Fetch rtc configuration
         stun_servers, turn_servers, rtc_config = await get_rtc_configuration(self.args)
+        logger.info(f"RTC config - STUN servers: {stun_servers}")
+        logger.info(f"RTC config - TURN servers: {turn_servers}")
         self.rtc_app = RTCApp(
             async_event_loop=asyncio.get_running_loop(),
             encoder=self.args.encoder,

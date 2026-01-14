@@ -405,8 +405,8 @@ class RTCApp:
         # Format TURN servers
         formatted_turn_servers = self.format_turn_servers(self.turn_servers)
         formatted_stun_servers = self.format_stun_servers(self.stun_servers)
-        logger.debug(f"stun servers: {formatted_stun_servers}")
-        logger.debug(f"turn servers: {formatted_turn_servers}")
+        logger.info(f"ICE config - STUN servers: {formatted_stun_servers}")
+        logger.info(f"ICE config - TURN servers: {formatted_turn_servers}")
 
         ice_servers = []
         if self.stun_servers:
