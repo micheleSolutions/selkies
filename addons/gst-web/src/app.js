@@ -244,6 +244,7 @@ var app = new Vue({
         enableClipboard() {
             navigator.clipboard.readText()
                 .then(text => {
+                    app.clipboardStatus = 'enabled';
                     webrtc._setStatus("clipboard enabled");
                     webrtc.sendDataChannelMessage("cr");
                 })
@@ -727,11 +728,18 @@ window.addEventListener('blur', () => {
 });
 
 webrtc.onclipboardcontent = (content) => {
+    console.log("Received clipboard from remote, length:", content.length, "status:", app.clipboardStatus);
     if (app.clipboardStatus === 'enabled') {
         navigator.clipboard.writeText(content)
+            .then(() => {
+                console.log("Clipboard written to browser successfully");
+            })
             .catch(err => {
+                console.error('Could not copy text to clipboard:', err);
                 webrtc._setStatus('Could not copy text to clipboard: ' + err);
         });
+    } else {
+        console.warn("Clipboard received but clipboardStatus is not enabled. Click the clipboard icon to enable.");
     }
 }
 
