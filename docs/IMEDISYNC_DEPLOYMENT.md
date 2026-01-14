@@ -234,14 +234,14 @@ docker build -f Dockerfile.base -t selkies-base:v2.0.0 --no-cache .
 - Selkies-GStreamer WebRTC streaming
 - Secure clipboard with logging support
 - TURN/STUN support
+- Development tools: python3, pip3, curl (for apt repos)
+- Miniconda (for researchers needing different Python versions)
 - Basic tools: git, vim, nano, tmux, htop, zip, unzip
 
-**Base image excludes (security hardening):**
+**Base image excludes:**
 - Web browsers (Chrome, Firefox)
 - Email clients
 - Unnecessary desktop gadgets (xfce4-goodies)
-- python3/pip3 (removed after build)
-- curl/wget (removed after build)
 
 ### Option 2: Full Image (with Firefox and extras)
 

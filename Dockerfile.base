@@ -10,14 +10,14 @@
 # - WebRTC streaming via Selkies-GStreamer
 # - Secure clipboard with logging support
 # - TURN/STUN support
+# - Development tools: python3, pip3, curl (for apt repos)
+# - Miniconda (for researchers needing different Python versions)
 # - Basic tools: git, vim, nano, tmux, htop
 #
-# This image intentionally EXCLUDES (security hardening):
+# This image intentionally EXCLUDES:
 # - Web browsers (Chrome, Firefox)
 # - Email clients
 # - Unnecessary desktop gadgets (xfce4-goodies)
-# - python3/pip3 (removed after build)
-# - curl/wget (removed after build)
 #
 # CLIPBOARD SECURITY ENVIRONMENT VARIABLES:
 # -----------------------------------------
@@ -255,7 +255,7 @@ RUN mkdir -pm755 /etc/apt/trusted.gpg.d && curl -fsSL "https://keyserver.ubuntu.
         # Minimal XFCE Desktop (NO goodies, NO browsers)
         xfce4 \
         xfce4-terminal \
-        # Basic tools (minimal - no python/pip/curl/wget for security)
+        # Basic tools
         git \
         tmux \
         nano \
@@ -365,11 +365,13 @@ Minimal XFCE Desktop with WebRTC Streaming.\n\
 Clipboard security controls available.\n\
 " > /etc/motd
 
-# Remove build-time tools not needed at runtime (security hardening)
-RUN apt-get update && \
-    apt-get remove --purge -y curl wget python3-pip && \
-    apt-get autoremove -y && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /var/cache/debconf/* /var/log/* /tmp/* /var/tmp/*
+# Install Miniconda for researchers who need different Python versions
+ENV CONDA_DIR=/opt/conda
+RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p ${CONDA_DIR} && \
+    rm /tmp/miniconda.sh && \
+    ${CONDA_DIR}/bin/conda clean -afy
+ENV PATH="${CONDA_DIR}/bin:${PATH}"
 
 # Remove XFCE menu entries for browsers and mail (not installed)
 RUN rm -f /usr/share/applications/exo-web-browser.desktop \
