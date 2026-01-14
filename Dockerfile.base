@@ -66,7 +66,7 @@ LABEL version="2.0.0"
 
 ARG DEBIAN_FRONTEND=noninteractive
 # Configure rootless user environment for constrained conditions without escalated root privileges inside containers
-ARG TZ=UTC
+ARG TZ=Asia/Seoul
 ENV PASSWD=mypasswd
 RUN apt-get clean && apt-get update && apt-get dist-upgrade -y && apt-get install --no-install-recommends -y \
         apt-utils \
