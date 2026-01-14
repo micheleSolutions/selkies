@@ -130,6 +130,7 @@ class WebRTCSimpleServer(object):
         # TURN options
         self.turn_shared_secret = options.turn_shared_secret
         self.turn_host = options.turn_host
+        self.turn_host_external = getattr(options, 'turn_host_external', '') or options.turn_host
         self.turn_port = options.turn_port
         self.turn_protocol = options.turn_protocol.lower()
         if self.turn_protocol != 'tcp':
@@ -137,7 +138,14 @@ class WebRTCSimpleServer(object):
         self.turn_tls = options.turn_tls
         self.turn_auth_header_name = options.turn_auth_header_name
         self.stun_host = options.stun_host
+        self.stun_host_external = getattr(options, 'stun_host_external', '') or options.stun_host
         self.stun_port = options.stun_port
+
+        # Log when external hosts are configured (for split network topologies)
+        if self.turn_host_external != self.turn_host:
+            logger.info("Using external TURN host for browser: %s (internal: %s)", self.turn_host_external, self.turn_host)
+        if self.stun_host_external != self.stun_host:
+            logger.info("Using external STUN host for browser: %s (internal: %s)", self.stun_host_external, self.stun_host)
 
         # Basic authentication options
         self.enable_basic_auth = options.enable_basic_auth
@@ -224,7 +232,8 @@ class WebRTCSimpleServer(object):
                         web_logger.warning("HTTP GET {} 401 Unauthorized - missing auth header: {}".format(path, self.turn_auth_header_name))
                         return self.http_response(http.HTTPStatus.UNAUTHORIZED, response_headers, b'401 Unauthorized - missing auth header')
                 web_logger.info("Generating HMAC credential for user: {}".format(username))
-                rtc_config = generate_rtc_config(self.turn_host, self.turn_port, self.turn_shared_secret, username, self.turn_protocol, self.turn_tls, self.stun_host, self.stun_port)
+                # Use external hosts for browser-facing RTC config (supports split internal/external network topologies)
+                rtc_config = generate_rtc_config(self.turn_host_external, self.turn_port, self.turn_shared_secret, username, self.turn_protocol, self.turn_tls, self.stun_host_external, self.stun_port)
                 return self.http_response(http.HTTPStatus.OK, response_headers, str.encode(rtc_config))
 
             elif self.rtc_config:
