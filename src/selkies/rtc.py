@@ -148,7 +148,14 @@ class RTCApp:
             return
 
         # Generate RTCIceCandidate from ice
-        obj = Candidate.from_sdp(ice.get('candidate'))
+        candidate_str = ice.get('candidate', '')
+
+        # Skip mDNS candidates (.local addresses) - container may not have multicast support
+        if '.local ' in candidate_str:
+            logger.warning("Skipping mDNS candidate (no multicast support): %s", candidate_str[:80])
+            return
+
+        obj = Candidate.from_sdp(candidate_str)
         icecandidate = candidate_from_aioice(obj)
 
         sdp_mid = ice.get('sdpMid')
@@ -158,7 +165,14 @@ class RTCApp:
             icecandidate.sdpMLineIndex = ice.get('sdpMLineIndex')
 
         if isinstance(icecandidate, RTCIceCandidate):
-            await self.peer_connection.addIceCandidate(icecandidate)
+            try:
+                await self.peer_connection.addIceCandidate(icecandidate)
+            except OSError as e:
+                # Handle mDNS resolution failures in containerized environments
+                if e.errno == 19:  # No such device - mDNS not available
+                    logger.warning("Failed to add ICE candidate (mDNS not available): %s", str(e))
+                else:
+                    raise
         else:
             raise RTCAppError("ERROR: ice candidate is not an instance of RTCIceCandidate")
 
