@@ -193,7 +193,7 @@ EOF
 
 # Start the Selkies WebRTC HTML5 remote desktop application
 selkies \
-    --addr="localhost" \
+    --addr="${SELKIES_ADDR:-0.0.0.0}" \
     --port="${SELKIES_PORT:-8081}" \
     --mode=webrtc \
     --enable_basic_auth="false" \
