@@ -6,7 +6,7 @@ This document describes the secure clipboard control feature for Selkies-GStream
 
 The secure clipboard feature provides granular control over clipboard data flow between the remote workspace and the user's browser:
 
-- **Clipboard IN** (browser → workspace): Always allowed, no restrictions
+- **Clipboard IN** (browser → workspace): Always allowed, logged for audit
 - **Clipboard OUT** (workspace → browser): Controlled with configurable limits and audit logging
 
 ## Features
@@ -14,13 +14,17 @@ The secure clipboard feature provides granular control over clipboard data flow 
 1. **Enable/Disable Flag**: Completely enable or disable clipboard OUT
 2. **Max Bytes Per Operation**: Limit the size of individual clipboard transfers
 3. **Rate Limiting**: Limit total bytes transferred within a time window
-4. **Audit Logging**: Log all clipboard OUT operations with:
+4. **Bidirectional Audit Logging**: Log all clipboard operations (IN and OUT) with:
    - Timestamp (ISO 8601 format)
+   - Direction (`in` or `out`)
    - Data size in bytes
    - SHA256 hash of content (for audit without storing actual data)
    - User ID and Session ID
    - Block status and reason (if blocked)
    - MIME type
+5. **Ctrl+C/V Interception**: Automatic clipboard sync on keyboard shortcuts
+   - Ctrl+V: Syncs browser clipboard to remote before paste
+   - Ctrl+C: Requests remote clipboard after copy (100ms delay)
 
 ## Environment Variables
 
@@ -32,6 +36,7 @@ The secure clipboard feature provides granular control over clipboard data flow 
 | `CLIPBOARD_OUT_RATE_LIMIT_WINDOW_SECONDS` | `60` | Time window for rate limiting (seconds) |
 | `CLIPBOARD_LOG_FILE` | `` | Path to JSON lines log file (empty = disabled) |
 | `CLIPBOARD_LOG_ENDPOINT` | `` | HTTP endpoint for log submission (empty = disabled) |
+| `CLIPBOARD_LOG_VERIFY_SSL` | `true` | Verify SSL certificates (set `false` for self-signed certs) |
 | `SELKIES_USER_ID` | `$USER` | User ID for audit logging |
 | `SELKIES_SESSION_ID` | `` | Session ID for audit logging |
 
@@ -64,7 +69,8 @@ services:
       - CLIPBOARD_OUT_RATE_LIMIT_BYTES=51200
       - CLIPBOARD_OUT_RATE_LIMIT_WINDOW_SECONDS=60
       - CLIPBOARD_LOG_FILE=/var/log/clipboard/clipboard.jsonl
-      - CLIPBOARD_LOG_ENDPOINT=http://portal:8080/api/clipboard-log
+      - CLIPBOARD_LOG_ENDPOINT=https://portal:8443/api/clipboard-log
+      - CLIPBOARD_LOG_VERIFY_SSL=false  # For self-signed certificates
       - SELKIES_USER_ID=${USER_ID}
       - SELKIES_SESSION_ID=${SESSION_ID}
       # Other Selkies settings
@@ -106,26 +112,47 @@ Open your browser and navigate to `http://localhost:8080`
 
 ### 3. Test Clipboard Operations
 
-1. **Test Normal Operation**: Copy small text (< 1KB) in the workspace and verify it appears in your browser clipboard
+1. **Test Ctrl+C/V**: Use keyboard shortcuts - check browser console for sync messages:
+   - `Ctrl+V detected - syncing clipboard before paste`
+   - `Ctrl+C detected - requesting clipboard from remote`
 
-2. **Test Max Bytes Limit**: Copy a large file or text (> 1KB with the settings above) and verify it's blocked
+2. **Test Normal Operation**: Copy small text (< 1KB) in the workspace and verify it appears in your browser clipboard
 
-3. **Test Rate Limiting**: Rapidly copy multiple items to exceed the rate limit and verify blocking
+3. **Test Max Bytes Limit**: Copy a large file or text (> 1KB with the settings above) and verify it's blocked
 
-4. **Check Logs**: View the clipboard logs:
+4. **Test Rate Limiting**: Rapidly copy multiple items to exceed the rate limit and verify blocking
+
+5. **Check Logs**: View the clipboard logs:
    ```bash
    tail -f logs/clipboard.jsonl
    ```
 
 ## Log Output Examples
 
-### Successful Clipboard Transfer
+### Clipboard IN (Browser → Workspace)
 
 ```json
 {
   "timestamp": "2024-01-15T10:30:45.123456Z",
+  "direction": "in",
   "size_bytes": 256,
   "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "user_id": "researcher01",
+  "session_id": "session-abc123",
+  "blocked": false,
+  "block_reason": null,
+  "mime_type": "text/plain"
+}
+```
+
+### Clipboard OUT - Successful Transfer
+
+```json
+{
+  "timestamp": "2024-01-15T10:31:00.123456Z",
+  "direction": "out",
+  "size_bytes": 512,
+  "sha256_hash": "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",
   "user_id": "researcher01",
   "session_id": "session-abc123",
   "blocked": false,
@@ -139,6 +166,7 @@ Open your browser and navigate to `http://localhost:8080`
 ```json
 {
   "timestamp": "2024-01-15T10:31:12.789012Z",
+  "direction": "out",
   "size_bytes": 15360,
   "sha256_hash": "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",
   "user_id": "researcher01",
@@ -154,6 +182,7 @@ Open your browser and navigate to `http://localhost:8080`
 ```json
 {
   "timestamp": "2024-01-15T10:32:00.456789Z",
+  "direction": "out",
   "size_bytes": 8192,
   "sha256_hash": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
   "user_id": "researcher01",
@@ -169,6 +198,7 @@ Open your browser and navigate to `http://localhost:8080`
 ```json
 {
   "timestamp": "2024-01-15T10:33:15.111222Z",
+  "direction": "out",
   "size_bytes": 512,
   "sha256_hash": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
   "user_id": "researcher01",
@@ -191,6 +221,7 @@ Content-Type: application/json
 
 {
   "timestamp": "2024-01-15T10:30:45.123456Z",
+  "direction": "in",
   "size_bytes": 256,
   "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "user_id": "researcher01",
@@ -199,6 +230,15 @@ Content-Type: application/json
   "block_reason": null,
   "mime_type": "text/plain"
 }
+```
+
+### Self-Signed SSL Certificates
+
+For enterprise deployments using self-signed certificates:
+
+```bash
+CLIPBOARD_LOG_ENDPOINT=https://portal:8443/api/clipboard-log
+CLIPBOARD_LOG_VERIFY_SSL=false
 ```
 
 ### Spring Boot Integration Example
@@ -225,6 +265,7 @@ public class ClipboardLogController {
 @Data
 public class ClipboardLogEntry {
     private String timestamp;
+    private String direction;  // "in" or "out"
     private int sizeBytes;
     private String sha256Hash;
     private String userId;
@@ -235,6 +276,17 @@ public class ClipboardLogEntry {
 }
 ```
 
+## Keyboard Shortcut Behavior
+
+The web client intercepts Ctrl+C and Ctrl+V to ensure clipboard synchronization:
+
+| Shortcut | Behavior |
+|----------|----------|
+| **Ctrl+V** | 1. Read browser clipboard<br>2. Send to remote workspace<br>3. Forward keystroke to remote |
+| **Ctrl+C** | 1. Forward keystroke to remote<br>2. Wait 100ms for clipboard update<br>3. Request clipboard from remote<br>4. Write to browser clipboard |
+
+This ensures clipboard works reliably with both keyboard shortcuts and context menu (right-click).
+
 ## Security Considerations
 
 1. **Hash-Only Logging**: The system logs SHA256 hashes instead of actual content, enabling audit trails without storing sensitive data
@@ -243,7 +295,9 @@ public class ClipboardLogEntry {
 
 3. **Binary Clipboard**: Binary data (images) is subject to the same controls as text
 
-4. **Clipboard IN**: Incoming clipboard data is always allowed - consider separate controls if needed
+4. **Clipboard IN**: Incoming clipboard data is always allowed but logged for complete audit trail
+
+5. **Bidirectional Logging**: Both directions are logged, enabling complete reconstruction of clipboard activity
 
 ## Troubleshooting
 
@@ -251,7 +305,15 @@ public class ClipboardLogEntry {
 
 1. Check that `SELKIES_ENABLE_CLIPBOARD=true` is set
 2. Verify the browser has clipboard permissions
-3. Check server logs for errors
+3. Check browser console for sync messages
+4. Check server logs for errors
+
+### Ctrl+C/V Not Syncing
+
+1. Open browser developer console (F12)
+2. Look for messages like `Ctrl+V detected - syncing clipboard before paste`
+3. If no messages appear, keyboard events may not be reaching the handler
+4. Try clicking on the video element first to ensure focus
 
 ### Logs Not Appearing
 
@@ -263,12 +325,15 @@ public class ClipboardLogEntry {
 
 1. Verify the endpoint URL is correct
 2. Check network connectivity between containers
-3. Review the endpoint service logs
+3. For HTTPS with self-signed certs, set `CLIPBOARD_LOG_VERIFY_SSL=false`
+4. Review the endpoint service logs
 
 ## Files Modified
 
-- `src/selkies/clipboard_security.py` - New security control module
-- `src/selkies/input_handler.py` - Integrated security checks
+- `src/selkies/clipboard_security.py` - Security control module with bidirectional logging
+- `src/selkies/input_handler.py` - Integrated security checks and clipboard IN logging
+- `addons/gst-web/src/input.js` - Ctrl+C/V interception for clipboard sync
+- `addons/gst-web/src/app.js` - Clipboard sync callbacks
 - `Dockerfile.isyncbrain` - Custom Dockerfile for iSyncBrain
 
 ## Compatibility

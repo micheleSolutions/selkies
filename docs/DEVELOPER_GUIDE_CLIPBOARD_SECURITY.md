@@ -10,11 +10,14 @@ This document describes the modifications made to Selkies-GStreamer to add secur
 
 1. **`src/selkies/clipboard_security.py`** - Core security control module
 2. **`Dockerfile.isyncbrain`** - Custom Dockerfile for building the secure image
-3. **`docs/SECURE_CLIPBOARD.md`** - User documentation
+3. **`Dockerfile.base`** - Minimal base image for custom deployments
+4. **`docs/SECURE_CLIPBOARD.md`** - User documentation
 
 ### Files Modified
 
-1. **`src/selkies/input_handler.py`** - Integrated clipboard security checks
+1. **`src/selkies/input_handler.py`** - Integrated clipboard security checks and IN logging
+2. **`addons/gst-web/src/input.js`** - Ctrl+C/V interception for clipboard sync
+3. **`addons/gst-web/src/app.js`** - Clipboard sync callbacks
 
 ## Architecture
 
@@ -23,24 +26,24 @@ This document describes the modifications made to Selkies-GStreamer to add secur
 │                        Browser (User)                            │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│   ┌──────────────┐                      ┌──────────────┐        │
-│   │ Clipboard IN │ ──────────────────▶  │ Remote       │        │
-│   │ (paste)      │    Always Allowed    │ Workspace    │        │
-│   └──────────────┘                      └──────────────┘        │
+│   ┌──────────────┐    Ctrl+V intercept    ┌──────────────┐      │
+│   │ Clipboard IN │ ──────────────────────▶│ Remote       │      │
+│   │ (paste)      │  Always Allowed + Log  │ Workspace    │      │
+│   └──────────────┘                        └──────────────┘      │
 │                                                                  │
-│   ┌──────────────┐                      ┌──────────────┐        │
-│   │ Clipboard OUT│ ◀─────────────────── │ Remote       │        │
-│   │ (copy)       │    Security Check    │ Workspace    │        │
-│   └──────────────┘                      └──────────────┘        │
+│   ┌──────────────┐    Ctrl+C intercept    ┌──────────────┐      │
+│   │ Clipboard OUT│ ◀──────────────────────│ Remote       │      │
+│   │ (copy)       │    Security Check      │ Workspace    │      │
+│   └──────────────┘                        └──────────────┘      │
 │                           │                                      │
 │                           ▼                                      │
 │              ┌────────────────────────┐                         │
 │              │ ClipboardSecurityManager│                         │
 │              ├────────────────────────┤                         │
-│              │ • Enable/Disable check  │                         │
-│              │ • Max bytes check       │                         │
-│              │ • Rate limit check      │                         │
-│              │ • Audit logging         │                         │
+│              │ • Enable/Disable check  │ (OUT only)              │
+│              │ • Max bytes check       │ (OUT only)              │
+│              │ • Rate limit check      │ (OUT only)              │
+│              │ • Bidirectional logging │ (IN + OUT)              │
 │              └────────────────────────┘                         │
 │                           │                                      │
 │              ┌────────────┴────────────┐                        │
@@ -51,7 +54,7 @@ This document describes the modifications made to Selkies-GStreamer to add secur
 │     └─────────────────┘      └─────────────────┘               │
 │                                      │                          │
 └──────────────────────────────────────│──────────────────────────┘
-                                       │
+                                       │ (supports self-signed SSL)
                                        ▼
                           ┌─────────────────────┐
                           │  iSyncBrain Portal  │
@@ -62,20 +65,22 @@ This document describes the modifications made to Selkies-GStreamer to add secur
 ## Data Flow
 
 ### Clipboard IN (Browser → Workspace)
-1. User pastes content in browser
-2. Browser sends clipboard data via WebSocket
-3. Selkies receives and writes to X11 clipboard
-4. **No restrictions applied** - always allowed
+1. User presses Ctrl+V or uses context menu paste
+2. **Web client intercepts** and syncs browser clipboard first
+3. Browser sends clipboard data via WebSocket (`cw` message)
+4. Selkies receives and writes to X11 clipboard
+5. **No restrictions** - always allowed, but **logged for audit**
 
 ### Clipboard OUT (Workspace → Browser)
-1. User copies content in remote workspace
-2. Selkies detects clipboard change via X11 monitoring
-3. **Security checks applied:**
+1. User copies content in remote workspace (Ctrl+C or context menu)
+2. **Web client intercepts Ctrl+C** and requests clipboard after 100ms
+3. Selkies detects clipboard change via X11 monitoring
+4. **Security checks applied:**
    - Is `CLIPBOARD_OUT_ENABLED=true`?
    - Is data size ≤ `CLIPBOARD_OUT_MAX_BYTES`?
    - Is rate limit not exceeded?
-4. If all checks pass → send to browser + log as allowed
-5. If any check fails → block + log with reason
+5. If all checks pass → send to browser + log as allowed
+6. If any check fails → block + log with reason
 
 ## Environment Variables
 
@@ -87,6 +92,7 @@ This document describes the modifications made to Selkies-GStreamer to add secur
 | `CLIPBOARD_OUT_RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate limit window in seconds |
 | `CLIPBOARD_LOG_FILE` | (empty) | Path to JSON lines log file |
 | `CLIPBOARD_LOG_ENDPOINT` | (empty) | HTTP endpoint URL for log submission |
+| `CLIPBOARD_LOG_VERIFY_SSL` | `true` | Verify SSL certs (set `false` for self-signed) |
 | `SELKIES_USER_ID` | `$USER` | User identifier for logging |
 | `SELKIES_SESSION_ID` | (empty) | Session identifier for logging |
 
@@ -138,7 +144,9 @@ containers:
       - name: CLIPBOARD_LOG_FILE
         value: "/var/log/clipboard/clipboard.jsonl"
       - name: CLIPBOARD_LOG_ENDPOINT
-        value: "http://portal-service:8080/api/v1/clipboard-logs"
+        value: "https://portal-service:8443/api/v1/clipboard-logs"
+      - name: CLIPBOARD_LOG_VERIFY_SSL
+        value: "false"  # For self-signed certificates
 
       # User/Session Identification (inject from portal)
       - name: SELKIES_USER_ID
@@ -194,6 +202,9 @@ public class ClipboardLogEntry {
     @Column(name = "timestamp")
     private String timestamp;  // ISO 8601 format
 
+    @Column(name = "direction")
+    private String direction;  // "in" or "out"
+
     @Column(name = "size_bytes")
     private Integer sizeBytes;
 
@@ -222,6 +233,7 @@ public class ClipboardLogEntry {
 ```json
 {
   "timestamp": "2024-01-15T10:30:45.123456Z",
+  "direction": "in",
   "size_bytes": 256,
   "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "user_id": "researcher01",
@@ -231,6 +243,10 @@ public class ClipboardLogEntry {
   "mime_type": "text/plain"
 }
 ```
+
+**Direction values:**
+- `"in"` - Browser → Workspace (paste)
+- `"out"` - Workspace → Browser (copy)
 
 ### Block Reasons
 
@@ -271,18 +287,33 @@ WHERE blocked = true
 GROUP BY user_id
 ORDER BY blocked_count DESC;
 
--- Data transfer volume by user (last 24h)
-SELECT user_id, SUM(size_bytes) as total_bytes
+-- Data transfer volume by user and direction (last 24h)
+SELECT user_id, direction, SUM(size_bytes) as total_bytes
 FROM clipboard_logs
 WHERE blocked = false
   AND timestamp > NOW() - INTERVAL '24 hours'
-GROUP BY user_id;
+GROUP BY user_id, direction;
+
+-- Clipboard OUT activity (potential data exfiltration)
+SELECT user_id, COUNT(*) as out_count, SUM(size_bytes) as total_bytes
+FROM clipboard_logs
+WHERE direction = 'out' AND blocked = false
+  AND timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY user_id
+ORDER BY total_bytes DESC;
 
 -- Recent blocked attempts
 SELECT * FROM clipboard_logs
 WHERE blocked = true
 ORDER BY timestamp DESC
 LIMIT 100;
+
+-- All clipboard activity for a specific user
+SELECT timestamp, direction, size_bytes, blocked, block_reason
+FROM clipboard_logs
+WHERE user_id = 'researcher01'
+ORDER BY timestamp DESC
+LIMIT 50;
 ```
 
 ## Testing
