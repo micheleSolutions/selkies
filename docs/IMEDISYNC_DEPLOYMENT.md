@@ -230,16 +230,18 @@ docker build -f Dockerfile.base -t selkies-base:v2.0.0 --no-cache .
 ```
 
 **Base image includes:**
-- XFCE desktop environment
+- XFCE desktop environment (clean menu, no browser/mail entries)
 - Selkies-GStreamer WebRTC streaming
 - Secure clipboard with logging support
 - TURN/STUN support
-- Basic tools: git, python3, pip3, curl, wget, vim, nano, htop, tmux
+- Basic tools: git, vim, nano, tmux, htop, zip, unzip
 
-**Base image excludes:**
+**Base image excludes (security hardening):**
 - Web browsers (Chrome, Firefox)
 - Email clients
 - Unnecessary desktop gadgets (xfce4-goodies)
+- python3/pip3 (removed after build)
+- curl/wget (removed after build)
 
 ### Option 2: Full Image (with Firefox and extras)
 
