@@ -384,6 +384,29 @@ RUN rm -f /usr/share/applications/exo-web-browser.desktop \
           /usr/share/applications/*thunderbird*.desktop \
           /usr/share/applications/*evolution*.desktop || true
 
+# Configure XFCE for better font/icon sizes (DPI 120, larger icons)
+RUN mkdir -p /home/ubuntu/.config/xfce4/xfconf/xfce-perchannel-xml && \
+    echo '<?xml version="1.0" encoding="UTF-8"?>\n\
+<channel name="xsettings" version="1.0">\n\
+  <property name="Xft" type="empty">\n\
+    <property name="DPI" type="int" value="120"/>\n\
+    <property name="Antialias" type="int" value="1"/>\n\
+  </property>\n\
+  <property name="Gtk" type="empty">\n\
+    <property name="FontName" type="string" value="Sans 11"/>\n\
+    <property name="IconSizes" type="string" value="gtk-menu=24,24:gtk-button=24,24:gtk-small-toolbar=24,24:gtk-large-toolbar=32,32"/>\n\
+  </property>\n\
+</channel>' > /home/ubuntu/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml && \
+    echo '<?xml version="1.0" encoding="UTF-8"?>\n\
+<channel name="xfce4-desktop" version="1.0">\n\
+  <property name="desktop-icons" type="empty">\n\
+    <property name="icon-size" type="uint" value="64"/>\n\
+    <property name="font-size" type="double" value="11.0"/>\n\
+    <property name="use-custom-font-size" type="bool" value="true"/>\n\
+  </property>\n\
+</channel>' > /home/ubuntu/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml && \
+    chown -R 1000:1000 /home/ubuntu/.config
+
 SHELL ["/bin/sh", "-c"]
 
 USER 0
