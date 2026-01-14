@@ -272,14 +272,45 @@
                 </v-select>
               </p>
               <p>
-                <v-switch v-model="resizeRemote" :label="`Resize remote to fit window: ${resizeRemote.toString()}`"></v-switch>
-                <v-switch v-model="scaleLocal" :label="`Scale to fit window: ${scaleLocal.toString()}`"></v-switch>
+              <ul>
+                <li>Peer connection state: <b>{{ status }}</b></li>
+                <li>Peer connection type: <b>{{ connectionStat.connectionStatType }}</b></li>
+                <li>Packets received: <b>{{ connectionStat.connectionPacketsReceived }}</b></li>
+                <li>Packets lost: <b>{{ connectionStat.connectionPacketsLost }}</b></li>
+                <li>Bytes received: <b>{{ connectionStat.connectionBytesReceived }}</b></li>
+                <li>Bytes sent: <b>{{ connectionStat.connectionBytesSent }}</b></li>
+              </ul>
+              Video Stats
+              <ul>
+                <li>Latency: <b>{{ connectionStat.connectionVideoLatency }} ms</b></li>
+                <li>Video: <b>{{ connectionStat.connectionCodec }} {{ connectionStat.connectionResolution }}</b></li>
+                <li>Video encoder: <b>{{ encoderName }}</b></li>
+                <li>Window size: <b>{{ windowResolution[0] }}x{{ windowResolution[1] }}</b></li>
+                <li>Framerate: <b>{{ connectionStat.connectionFrameRate }} fps</b></li>
+                <li>Bitrate: <b>{{ connectionStat.connectionVideoBitrate }} mbps</b></li>
+                <li>Available receive bandwidth: <b>{{ connectionStat.connectionAvailableBandwidth }}</b></li>
+              </ul>
+              <div v-if="clipboardSecurity" style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f5f5f5;">
+                <b style="color: #333;">🛡️ Clipboard Security</b>
+                <ul style="margin-top: 5px;">
+                  <li>Paste IN (browser→workspace): <b style="color: green;">Always allowed</b></li>
+                  <li>Copy OUT (workspace→browser): <b :style="{ color: clipboardSecurity.out_enabled ? 'orange' : 'red' }">{{ clipboardSecurity.out_enabled ? 'Limited' : 'Blocked' }}</b></li>
+                  <li v-if="clipboardSecurity.out_enabled">Max per operation: <b>{{ formatBytes(clipboardSecurity.out_max_bytes) }}</b></li>
+                  <li v-if="clipboardSecurity.out_enabled">Rate limit: <b>{{ formatBytes(clipboardSecurity.rate_limit_bytes) }}/{{ clipboardSecurity.rate_limit_window_seconds }}s</b></li>
+                </ul>
+              </div>
+              <small style="color:gray">
+              Shortcuts
+              <ul>
+                <li>Fullscreen: Ctrl + Shift + F or Fullscreen Button</li>
+                <li>Open Side Menu: Ctrl + Shift + M or Side Button</li>
+              </ul>
+              </small>
               </p>
               <hr />
               <p>
-                <small style="color:gray">
-                Connection: <b>{{ status }}</b> ({{ connectionStat.connectionStatType }})
-                </small>
+                <v-switch v-model="resizeRemote" :label="`Resize remote to fit window: ${resizeRemote.toString()}`"></v-switch>
+                <v-switch v-model="scaleLocal" :label="`Scale to fit window: ${scaleLocal.toString()}`"></v-switch>
               </p>
 
               <p v-if="publishingAllowed">
