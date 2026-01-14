@@ -444,9 +444,9 @@ async def get_rtc_configuration(args: Any) -> Tuple[List, List, Dict]:
     6. Default built-in configuration
     """
 
-    turn_rest_username = args.turn_rest_username.replace(":", "-")
-    turn_protocol = 'tcp' if args.turn_protocol.lower() == 'tcp' else 'udp'
-    using_turn_tls = args.turn_tls
+    turn_rest_username = (args.turn_rest_username or "user").replace(":", "-")
+    turn_protocol = 'tcp' if (args.turn_protocol or 'udp').lower() == 'tcp' else 'udp'
+    using_turn_tls = args.turn_tls or False
 
     # Try each method in order of priority, returning on the first success
     if config := await try_cloudflare(args):
