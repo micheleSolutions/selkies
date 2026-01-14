@@ -1097,19 +1097,32 @@ class RTCPeerConnection(AsyncIOEventEmitter):
                             self.__remoteRtp(transceiver)
                         )
         if self.__sctp:
+            self.__log_debug("SCTP: checking connection, bundled=%s", self.__sctp._bundled)
             dtlsTransport = self.__sctp.transport
             iceTransport = dtlsTransport.transport
+            has_local_candidates = bool(iceTransport.iceGatherer.getLocalCandidates())
+            in_remote_ice = self.__sctp in self.__remoteIce
+            self.__log_debug("SCTP: has_local_candidates=%s, in_remoteIce=%s, dtls_state=%s",
+                            has_local_candidates, in_remote_ice, dtlsTransport.state)
             if (
-                iceTransport.iceGatherer.getLocalCandidates()
-                and self.__sctp in self.__remoteIce
+                has_local_candidates
+                and in_remote_ice
             ):
                 await iceTransport.start(self.__remoteIce[self.__sctp])
+                self.__log_debug("SCTP: after ICE start, dtls_state=%s", dtlsTransport.state)
                 if dtlsTransport.state == "new":
                     await dtlsTransport.start(self.__remoteDtls[self.__sctp])
+                    self.__log_debug("SCTP: after DTLS start, dtls_state=%s", dtlsTransport.state)
                 if dtlsTransport.state == "connected":
+                    self.__log_debug("SCTP: starting SCTP transport")
                     await self.__sctp.start(
                         self.__sctpRemoteCaps, self.__sctpRemotePort
                     )
+                    self.__log_debug("SCTP: SCTP transport started")
+                else:
+                    self.__log_debug("SCTP: DTLS not connected, state=%s - SCTP will NOT start!", dtlsTransport.state)
+            else:
+                self.__log_debug("SCTP: skipping connect - missing candidates or not in remoteIce")
 
     async def __gather(self) -> None:
         coros = map(lambda t: t.iceGatherer.gather(), self.__iceTransports)

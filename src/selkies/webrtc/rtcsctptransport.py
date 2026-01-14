@@ -763,6 +763,8 @@ class RTCSctpTransport(AsyncIOEventEmitter):
         """
         Start the transport.
         """
+        logger.info("SCTP start called: is_server=%s, remotePort=%s, already_started=%s",
+                   self.is_server, remotePort, self.__started)
         if not self.__started:
             self.__started = True
             self.__state = "connecting"
@@ -783,8 +785,11 @@ class RTCSctpTransport(AsyncIOEventEmitter):
                 self._data_channel_id = 1
 
             self.__transport._register_data_receiver(self)
+            logger.info("SCTP: registered data receiver, is_server=%s, calling _init=%s",
+                       self.is_server, not self.is_server)
             if not self.is_server:
                 await self._init()
+                logger.info("SCTP: _init completed")
 
     async def stop(self) -> None:
         """
@@ -1433,9 +1438,11 @@ class RTCSctpTransport(AsyncIOEventEmitter):
         """
         if state != self._association_state:
             self.__log_debug("- %s -> %s", self._association_state, state)
+            logger.info("SCTP state change: %s -> %s", self._association_state, state)
             self._association_state = state
 
         if state == self.State.ESTABLISHED:
+            logger.info("SCTP ESTABLISHED - will open %d data channels", len(self._data_channels))
             self.__state = "connected"
             for channel in list(self._data_channels.values()):
                 if channel.negotiated and channel.readyState != "open":
