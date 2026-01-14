@@ -63,6 +63,7 @@ This requires two separate configuration values:
 | `SELKIES_ADDR` | `0.0.0.0` | Address for signaling server to bind (use `0.0.0.0` for container deployments) |
 | `SELKIES_PORT` | `8081` | Port for signaling server |
 | `SELKIES_TURN_PROTOCOL` | `udp` | TURN protocol (`udp` or `tcp`) |
+| `SELKIES_ENABLE_RESIZE` | `true` | Enable remote desktop resolution resize to match browser window |
 
 ## coTURN Configuration
 
@@ -213,6 +214,7 @@ Cannot connect to host portal:8080
 | v1.0.0 | Initial iMediSync Bastion release |
 | v1.1.0 | Fixed `--addr=localhost` to `--addr=0.0.0.0`, added `TURN_HOST_EXTERNAL` support |
 | v1.2.0 | Added session takeover for reconnection handling |
+| v1.3.0 | Enabled `SELKIES_ENABLE_RESIZE` by default for automatic resolution adaptation |
 
 ## Building the Image
 
@@ -221,7 +223,7 @@ git clone https://github.com/your-org/selkies.git
 cd selkies
 git checkout claude/debug-clipboard-control-hCcAd  # or main after merge
 
-docker build -f Dockerfile.isyncbrain -t selkies-secure:v1.2.0 --no-cache .
+docker build -f Dockerfile.isyncbrain -t selkies-secure:v1.3.0 --no-cache .
 ```
 
 ## Quick Start
