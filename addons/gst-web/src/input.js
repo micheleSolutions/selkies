@@ -553,8 +553,22 @@ class Input {
      * When fullscreen is entered, request keyboard and pointer lock.
      */
     _onFullscreenChange() {
+        // Re-initialize keyboard handlers on ANY fullscreen change
+        const reinitKeyboard = () => {
+            if (this.keyboard) {
+                this.keyboard.reset();
+                this.keyboard.onkeydown = (keysym) => {
+                    this.send("kd," + keysym);
+                };
+                this.keyboard.onkeyup = (keysym) => {
+                    this.send("ku," + keysym);
+                };
+            }
+        };
+
         if (document.fullscreenElement !== null) {
             // Entering fullscreen
+            console.log("Entering fullscreen");
             if (document.pointerLockElement === null) {
                 this.element.requestPointerLock().then(
                     () => {
@@ -566,20 +580,17 @@ class Input {
                     }
                 );
             }
+            // Request keyboard lock but don't let it break keyboard if it fails
             this.requestKeyboardLock();
+            // Re-init keyboard after a short delay to ensure it works in fullscreen
+            setTimeout(() => {
+                console.log("Re-initializing keyboard after fullscreen enter");
+                reinitKeyboard();
+            }, 100);
         } else {
-            // Exiting fullscreen - re-initialize keyboard to fix focus issues
+            // Exiting fullscreen
             console.log("Exiting fullscreen, re-initializing keyboard");
-            if (this.keyboard) {
-                this.keyboard.reset();
-                // Re-bind keyboard handlers to ensure they work after fullscreen exit
-                this.keyboard.onkeydown = (keysym) => {
-                    this.send("kd," + keysym);
-                };
-                this.keyboard.onkeyup = (keysym) => {
-                    this.send("ku," + keysym);
-                };
-            }
+            reinitKeyboard();
         }
 
         // Reset stuck keys on server side.
