@@ -386,8 +386,16 @@ class WebRTCSimpleServer(object):
                 # Check if callee is already in a session
                 callee_status = self.peers[callee_id][2]
                 if callee_status == 'session':
-                    await ws.send('ERROR peer {!r} busy'.format(callee_id))
-                    continue
+                    # Check if the old session partner is still connected
+                    old_partner_id = self.sessions.get(callee_id)
+                    if old_partner_id and old_partner_id in self.peers:
+                        # Old partner still connected, reject new session
+                        await ws.send('ERROR peer {!r} busy'.format(callee_id))
+                        continue
+                    else:
+                        # Old partner disconnected, cleanup stale session and allow takeover
+                        logger.info(f"Session takeover: old partner {old_partner_id} disconnected, allowing new session from {uid}")
+                        await self.cleanup_session(callee_id)
                 # Get callee websocket before sending SESSION_OK
                 wsc = self.peers[callee_id][0]
                 logger.info('Session from {!r} ({!r}) to {!r} ({!r})'
