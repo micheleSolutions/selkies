@@ -681,6 +681,24 @@ webrtc.input.onresizeend = () => {
     webrtc.sendDataChannelMessage("s," + window.devicePixelRatio);
 }
 
+// Ctrl+V handler - sync browser clipboard to remote before paste
+webrtc.input.onpasteshortcut = () => {
+    navigator.clipboard.readText()
+        .then(text => {
+            console.log("Syncing clipboard to remote before Ctrl+V, length:", text.length);
+            webrtc.sendDataChannelMessage("cw," + stringToBase64(text));
+        })
+        .catch(err => {
+            console.log('Failed to sync clipboard for paste: ' + err);
+        });
+}
+
+// Ctrl+C handler - request clipboard from remote after copy
+webrtc.input.oncopyshortcut = () => {
+    console.log("Requesting clipboard from remote after Ctrl+C");
+    webrtc.sendDataChannelMessage("cr");
+}
+
 webrtc.onplaystreamrequired = () => {
     app.showStart = true;
 }

@@ -100,6 +100,18 @@ class Input {
         this.ongamepaddisconneceted = null;
 
         /**
+         * @type {function}
+         * Callback fired before Ctrl+V to sync browser clipboard to remote
+         */
+        this.onpasteshortcut = null;
+
+        /**
+         * @type {function}
+         * Callback fired after Ctrl+C to sync remote clipboard to browser
+         */
+        this.oncopyshortcut = null;
+
+        /**
          * List of attached listeners, record keeping used to detach all.
          * @type {Array}
          */
@@ -407,6 +419,26 @@ class Input {
                 event.preventDefault();
             }
             return;
+        }
+
+        // Intercept Ctrl+V (paste) - sync browser clipboard to remote before pasting
+        if (event.type === 'keydown' && event.code === 'KeyV' && event.ctrlKey && !event.shiftKey && !event.altKey) {
+            if (this.onpasteshortcut !== null) {
+                console.log("Ctrl+V detected - syncing clipboard before paste");
+                this.onpasteshortcut();
+            }
+            // Don't prevent default - let the key go through to remote
+        }
+
+        // Intercept Ctrl+C (copy) - sync remote clipboard to browser after copying
+        if (event.type === 'keyup' && event.code === 'KeyC' && event.ctrlKey && !event.shiftKey && !event.altKey) {
+            if (this.oncopyshortcut !== null) {
+                // Small delay to let the remote clipboard update
+                setTimeout(() => {
+                    console.log("Ctrl+C detected - requesting clipboard from remote");
+                    this.oncopyshortcut();
+                }, 100);
+            }
         }
     }
 
