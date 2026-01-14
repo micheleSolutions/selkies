@@ -72,6 +72,10 @@ class ClipboardSecurityConfig:
         # CLIPBOARD_LOG_ENDPOINT: HTTP endpoint for log submission (optional)
         self.log_endpoint = os.environ.get("CLIPBOARD_LOG_ENDPOINT", "")
 
+        # CLIPBOARD_LOG_VERIFY_SSL: Verify SSL certificates (default true)
+        # Set to false for self-signed certificates in enterprise deployments
+        self.log_verify_ssl = os.environ.get("CLIPBOARD_LOG_VERIFY_SSL", "true").lower() == "true"
+
         # Session identification (can be set externally)
         self.user_id = os.environ.get("SELKIES_USER_ID", os.environ.get("USER", ""))
         self.session_id = os.environ.get("SELKIES_SESSION_ID", "")
@@ -83,7 +87,8 @@ class ClipboardSecurityConfig:
             f"rate_limit_bytes={self.rate_limit_bytes}, "
             f"rate_limit_window_seconds={self.rate_limit_window_seconds}, "
             f"log_file={self.log_file!r}, "
-            f"log_endpoint={self.log_endpoint!r})"
+            f"log_endpoint={self.log_endpoint!r}, "
+            f"log_verify_ssl={self.log_verify_ssl})"
         )
 
 
@@ -366,10 +371,14 @@ class ClipboardSecurityManager:
             if self._http_session is None or self._http_session.closed:
                 self._http_session = aiohttp.ClientSession()
 
+            # SSL verification setting for self-signed certificates
+            ssl_context = None if self.config.log_verify_ssl else False
+
             async with self._http_session.post(
                 self.config.log_endpoint,
                 json=entry.to_dict(),
-                timeout=aiohttp.ClientTimeout(total=5)
+                timeout=aiohttp.ClientTimeout(total=5),
+                ssl=ssl_context
             ) as response:
                 if response.status >= 400:
                     logger.warning(
