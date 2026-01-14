@@ -215,15 +215,36 @@ Cannot connect to host portal:8080
 | v1.1.0 | Fixed `--addr=localhost` to `--addr=0.0.0.0`, added `TURN_HOST_EXTERNAL` support |
 | v1.2.0 | Added session takeover for reconnection handling |
 | v1.3.0 | Enabled `SELKIES_ENABLE_RESIZE` by default for automatic resolution adaptation |
+| v2.0.0 | New minimal base image without browsers/gadgets, infrastructure-ready |
 
 ## Building the Image
+
+### Option 1: Base Image (Minimal - Recommended for Infrastructure)
 
 ```bash
 git clone https://github.com/your-org/selkies.git
 cd selkies
 git checkout claude/debug-clipboard-control-hCcAd  # or main after merge
 
-docker build -f Dockerfile.isyncbrain -t selkies-secure:v1.3.0 --no-cache .
+docker build -f Dockerfile.base -t selkies-base:v2.0.0 --no-cache .
+```
+
+**Base image includes:**
+- XFCE desktop environment
+- Selkies-GStreamer WebRTC streaming
+- Secure clipboard with logging support
+- TURN/STUN support
+- Basic tools: git, python3, pip3, curl, wget, vim, nano, htop, tmux
+
+**Base image excludes:**
+- Web browsers (Chrome, Firefox)
+- Email clients
+- Unnecessary desktop gadgets (xfce4-goodies)
+
+### Option 2: Full Image (with Firefox and extras)
+
+```bash
+docker build -f Dockerfile.isyncbrain -t selkies-secure:v2.0.0 --no-cache .
 ```
 
 ## Quick Start
@@ -238,5 +259,5 @@ docker run -d \
   -e SELKIES_TURN_SHARED_SECRET=your-secret-here \
   -e CLIPBOARD_OUT_ENABLED=true \
   -e CLIPBOARD_OUT_MAX_BYTES=10240 \
-  selkies-secure:v1.2.0
+  selkies-base:v2.0.0
 ```
