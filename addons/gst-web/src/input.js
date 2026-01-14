@@ -554,6 +554,7 @@ class Input {
      */
     _onFullscreenChange() {
         if (document.fullscreenElement !== null) {
+            // Entering fullscreen
             if (document.pointerLockElement === null) {
                 this.element.requestPointerLock().then(
                     () => {
@@ -566,10 +567,19 @@ class Input {
                 );
             }
             this.requestKeyboardLock();
-        }
-        // Reset local keyboard. When holding to exit full-screen the escape key can get stuck.
-        if (this.keyboard !== null) {
-            this.keyboard.reset();
+        } else {
+            // Exiting fullscreen - re-initialize keyboard to fix focus issues
+            console.log("Exiting fullscreen, re-initializing keyboard");
+            if (this.keyboard) {
+                this.keyboard.reset();
+                // Re-bind keyboard handlers to ensure they work after fullscreen exit
+                this.keyboard.onkeydown = (keysym) => {
+                    this.send("kd," + keysym);
+                };
+                this.keyboard.onkeyup = (keysym) => {
+                    this.send("ku," + keysym);
+                };
+            }
         }
 
         // Reset stuck keys on server side.
