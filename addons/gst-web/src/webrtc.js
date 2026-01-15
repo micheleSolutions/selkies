@@ -142,6 +142,12 @@ class WebRTCDemo {
         this.onclipboardcontent = null;
 
         /**
+         * Buffer for accumulating chunked clipboard messages
+         * @type {string}
+         */
+        this._clipboardBuffer = "";
+
+        /**
          * @type {function}
          */
         this.onsystemaction = null;
@@ -399,6 +405,24 @@ class WebRTCDemo {
                 if (this.onclipboardcontent !== null) {
                     this.onclipboardcontent(text);
                 }
+            }
+        } else if (msg.type === 'clipboard-msg') {
+            // Chunked clipboard message - accumulate in buffer
+            if (msg.data !== null && msg.data.content) {
+                this._clipboardBuffer += msg.data.content;
+                this._setDebug("received clipboard chunk, buffer length: " + this._clipboardBuffer.length);
+            }
+        } else if (msg.type === 'clipboard-msg-end') {
+            // Final chunk of clipboard message - decode and deliver
+            if (msg.data !== null && msg.data.content) {
+                this._clipboardBuffer += msg.data.content;
+            }
+            var text = base64ToString(this._clipboardBuffer);
+            this._setDebug("received clipboard contents (chunked), length: " + text.length);
+            this._clipboardBuffer = "";  // Reset buffer
+
+            if (this.onclipboardcontent !== null) {
+                this.onclipboardcontent(text);
             }
         } else if (msg.type === 'cursor') {
             if (this.oncursorchange !== null && msg.data !== null) {
