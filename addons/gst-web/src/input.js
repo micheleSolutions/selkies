@@ -602,17 +602,8 @@ class Input {
         if (document.fullscreenElement !== null) {
             // Entering fullscreen
             console.log("Entering fullscreen");
-            if (document.pointerLockElement === null) {
-                this.element.requestPointerLock().then(
-                    () => {
-                        console.log("pointer lock success");
-                    }
-                ).catch(
-                    (e) => {
-                        console.log("pointer lock failed: ", e);
-                    }
-                );
-            }
+            // Note: Pointer lock disabled for multi-monitor support
+            // Users can still move mouse to adjacent monitors in fullscreen
             // Request keyboard lock but don't let it break keyboard if it fails
             this.requestKeyboardLock();
             // Re-init keyboard after a short delay to ensure it works in fullscreen
@@ -718,17 +709,7 @@ class Input {
             this.send("ku," + keysym);
         };
 
-        if (document.fullscreenElement !== null && document.pointerLockElement === null) {
-            this.element.requestPointerLock().then(
-                () => {
-                    console.log("pointer lock success");
-                }
-            ).catch(
-                (e) => {
-                    console.log("pointer lock failed: ", e);
-                }
-            );
-        }
+        // Note: Pointer lock disabled for multi-monitor support
 
         this._windowMath();
     }
@@ -754,17 +735,7 @@ class Input {
     }
 
     enterFullscreen() {
-        if (document.pointerLockElement === null) {
-            this.element.requestPointerLock().then(
-                () => {
-                    console.log("pointer lock success");
-                }
-            ).catch(
-                (e) => {
-                    console.log("pointer lock failed: ", e);
-                }
-            );
-        }
+        // Note: Pointer lock disabled for multi-monitor support
         if (document.fullscreenElement === null) {
             this.element.parentElement.requestFullscreen().then(
                 () => {
