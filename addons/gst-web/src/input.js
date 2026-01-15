@@ -425,9 +425,10 @@ class Input {
         if (event.type === 'keydown' && event.code === 'KeyV' && event.ctrlKey && !event.shiftKey && !event.altKey) {
             if (this.onpasteshortcut !== null) {
                 console.log("Ctrl+V detected - syncing clipboard before paste");
+                this._pendingPaste = true;  // Set flag to delay the V keystroke
                 this.onpasteshortcut();
             }
-            // Don't prevent default - let the key go through to remote
+            // Don't prevent default - let the key go through to remote (but delayed)
         }
 
         // Intercept Ctrl+C (copy) - sync remote clipboard to browser after copying
@@ -699,7 +700,18 @@ class Input {
 
         // Using guacamole keyboard because it has the keysym translations.
         this.keyboard = new Guacamole.Keyboard(window);
+        this._pendingPaste = false;  // Flag to delay V key for clipboard sync
+
         this.keyboard.onkeydown = (keysym) => {
+            // If paste is pending and this is 'v' (keysym 118), delay to allow clipboard sync
+            if (this._pendingPaste && keysym === 118) {
+                console.log("Delaying V keystroke for clipboard sync");
+                setTimeout(() => {
+                    this.send("kd," + keysym);
+                    this._pendingPaste = false;
+                }, 150);  // 150ms delay for clipboard to sync
+                return;
+            }
             this.send("kd," + keysym);
         };
         this.keyboard.onkeyup = (keysym) => {
